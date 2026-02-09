@@ -9,8 +9,7 @@ class DrawingDataset(Dataset):
         self.clean_dir = clean_dir
         self.files = sorted(os.listdir(noisy_dir))
 
-        self.transform = T.Compose([
-            T.Grayscale(),
+        self.tf = T.Compose([
             T.Resize((img_size, img_size)),
             T.ToTensor()
         ])
@@ -19,10 +18,7 @@ class DrawingDataset(Dataset):
         return len(self.files)
 
     def __getitem__(self, idx):
-        noisy = Image.open(os.path.join(self.noisy_dir, self.files[idx]))
-        clean = Image.open(os.path.join(self.clean_dir, self.files[idx]))
+        noisy = Image.open(os.path.join(self.noisy_dir, self.files[idx])).convert("L")
+        clean = Image.open(os.path.join(self.clean_dir, self.files[idx])).convert("L")
 
-        noisy = self.transform(noisy)
-        clean = self.transform(clean)
-
-        return noisy, clean
+        return self.tf(noisy), self.tf(clean)
