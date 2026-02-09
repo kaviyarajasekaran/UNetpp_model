@@ -1,12 +1,13 @@
 import os
+import numpy as np
 from torch.utils.data import Dataset
 from PIL import Image
-import torch
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-class DenoisingDataset(Dataset):
-    def __init__(self, noisy_dir, clean_dir, split="train", val_ratio=0.1, image_size=384):
+class DrawingDataset(Dataset):
+    def __init__(self, noisy_dir, clean_dir, split="train", val_ratio=0.1, img_size=384):
+
         self.noisy_dir = noisy_dir
         self.clean_dir = clean_dir
 
@@ -20,7 +21,7 @@ class DenoisingDataset(Dataset):
 
         if split == "train":
             self.transform = A.Compose([
-                A.Resize(image_size, image_size),
+                A.Resize(img_size, img_size),
                 A.HorizontalFlip(p=0.5),
                 A.VerticalFlip(p=0.5),
                 A.RandomRotate90(p=0.5),
@@ -30,7 +31,7 @@ class DenoisingDataset(Dataset):
             ])
         else:
             self.transform = A.Compose([
-                A.Resize(image_size, image_size),
+                A.Resize(img_size, img_size),
                 A.Normalize(mean=[0.5], std=[0.5]),
                 ToTensorV2()
             ])
@@ -39,17 +40,11 @@ class DenoisingDataset(Dataset):
         return len(self.files)
 
     def __getitem__(self, idx):
-        noisy_path = os.path.join(self.noisy_dir, self.files[idx])
-        clean_path = os.path.join(self.clean_dir, self.files[idx])
-
-        noisy = Image.open(noisy_path).convert("L")
-        clean = Image.open(clean_path).convert("L")
+        noisy = Image.open(os.path.join(self.noisy_dir, self.files[idx])).convert("L")
+        clean = Image.open(os.path.join(self.clean_dir, self.files[idx])).convert("L")
 
         noisy = np.array(noisy)
         clean = np.array(clean)
 
-        augmented = self.transform(image=noisy, mask=clean)
-        noisy = augmented["image"]
-        clean = augmented["mask"]
-
-        return noisy, clean
+        aug = self.transform(image=noisy, mask=clean)
+        return aug["image"], aug["mask"]
