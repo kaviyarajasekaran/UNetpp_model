@@ -8,6 +8,6 @@ class Config:
     lr = 1e-4
     checkpoint_dir = "checkpoints"
     prediction_dir = "predictions"
-    val_ratio = 0.1
+    val_ratio = 0.2
     num_workers = 2
     pin_memory = True
