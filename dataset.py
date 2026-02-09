@@ -12,7 +12,7 @@ class DrawingDataset(Dataset):
         self.clean_dir = clean_dir
 
         self.files = sorted(os.listdir(noisy_dir))
-        split_idx = int(len(self.files) * (1 - val_ratio))
+        print("Total images:", len(self.files))
 
         if split == "train":
             self.files = self.files[:split_idx]
