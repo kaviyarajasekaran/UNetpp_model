@@ -26,11 +26,13 @@ def get_geometric_aug(image_size=384, split="train"):
             A.Resize(image_size, image_size),
         ])
 
+
 def get_noisy_only_aug():
     return A.Compose([
         A.RandomBrightnessContrast(p=0.3),
         A.GaussianBlur(blur_limit=3, p=0.15),
     ])
+
 
 def get_to_tensor():
     return A.Compose([ToTensorV2()])
@@ -43,25 +45,24 @@ class DenoisingDataset(Dataset):
         split="train",
         val_ratio=0.2,
         image_size=384,
-        invert_target=False, 
-        use_rgb=True           
+        invert_target=False,
+        channels=1 
     ):
         self.noisy_dir = noisy_dir
         self.clean_dir = clean_dir
         self.split = split.lower()
         self.invert_target = invert_target
-        self.use_rgb = use_rgb
+        self.channels = channels  # 1 or 3
 
         noisy_images = sorted(os.listdir(noisy_dir))
         clean_images = sorted(os.listdir(clean_dir))
 
         noisy_map = {os.path.splitext(f)[0]: f for f in noisy_images}
         clean_map = {os.path.splitext(f)[0]: f for f in clean_images}
-
         common_keys = sorted(list(set(noisy_map.keys()) & set(clean_map.keys())))
 
         if len(common_keys) == 0:
-            raise ValueError(" No matching noisy-clean image pairs found!")
+            raise ValueError("No matching noisy-clean pairs found!")
 
         self.noisy_images = [noisy_map[k] for k in common_keys]
         self.clean_images = [clean_map[k] for k in common_keys]
@@ -69,9 +70,7 @@ class DenoisingDataset(Dataset):
         print(f"Total matched images: {len(self.noisy_images)}")
 
         indices = list(range(len(self.noisy_images)))
-        train_idx, val_idx = train_test_split(
-            indices, test_size=val_ratio, random_state=42, shuffle=True
-        )
+        train_idx, val_idx = train_test_split(indices, test_size=val_ratio, random_state=42, shuffle=True)
         self.indices = train_idx if self.split == "train" else val_idx
 
         self.geo_aug = get_geometric_aug(image_size=image_size, split=self.split)
@@ -87,10 +86,10 @@ class DenoisingDataset(Dataset):
         noisy_path = os.path.join(self.noisy_dir, self.noisy_images[real_idx])
         clean_path = os.path.join(self.clean_dir, self.clean_images[real_idx])
 
-        if self.use_rgb:
+        if self.channels == 3:
             noisy = np.array(Image.open(noisy_path).convert("RGB"), dtype=np.float32) / 255.0
             clean = np.array(Image.open(clean_path).convert("RGB"), dtype=np.float32) / 255.0
-        else:
+        else:  # channels = 1
             noisy = np.array(Image.open(noisy_path).convert("L"), dtype=np.float32) / 255.0
             clean = np.array(Image.open(clean_path).convert("L"), dtype=np.float32) / 255.0
 
