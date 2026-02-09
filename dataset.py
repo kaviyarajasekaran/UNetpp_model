@@ -7,36 +7,6 @@ from sklearn.model_selection import train_test_split
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-def get_geometric_aug(image_size=384, split="train"):
-    if split == "train":
-        return A.Compose([
-            A.Resize(image_size, image_size),
-            A.HorizontalFlip(p=0.5),
-            A.VerticalFlip(p=0.3),
-            A.RandomRotate90(p=0.3),
-            A.Affine(
-                translate_percent=(-0.05, 0.05),
-                scale=(0.95, 1.05),
-                rotate=(-10, 10),
-                p=0.5
-            ),
-        ])
-    else:
-        return A.Compose([
-            A.Resize(image_size, image_size),
-        ])
-
-
-def get_noisy_only_aug():
-    return A.Compose([
-        A.RandomBrightnessContrast(p=0.3),
-        A.GaussianBlur(blur_limit=3, p=0.15),
-    ])
-
-
-def get_to_tensor():
-    return A.Compose([ToTensorV2()])
-
 class DenoisingDataset(Dataset):
     def __init__(
         self,
@@ -73,9 +43,6 @@ class DenoisingDataset(Dataset):
         train_idx, val_idx = train_test_split(indices, test_size=val_ratio, random_state=42, shuffle=True)
         self.indices = train_idx if self.split == "train" else val_idx
 
-        self.geo_aug = get_geometric_aug(image_size=image_size, split=self.split)
-        self.noisy_aug = get_noisy_only_aug() if self.split == "train" else None
-        self.to_tensor = get_to_tensor()
 
     def __len__(self):
         return len(self.indices)
