@@ -13,8 +13,9 @@ class EdgeLoss(nn.Module):
         self.register_buffer("sobel_y", sobel_y)
 
     def forward(self, pred, target):
-        sobel_x = self.sobel_x.to(pred.dtype)
-        sobel_y = self.sobel_y.to(pred.dtype)
+        # VERY IMPORTANT LINE
+        sobel_x = self.sobel_x.to(device=pred.device, dtype=pred.dtype)
+        sobel_y = self.sobel_y.to(device=pred.device, dtype=pred.dtype)
 
         gx_pred = F.conv2d(pred, sobel_x, padding=1)
         gy_pred = F.conv2d(pred, sobel_y, padding=1)
@@ -27,7 +28,6 @@ class EdgeLoss(nn.Module):
 
         return F.l1_loss(edge_pred, edge_target)
 
-
 class L1_Edge_Loss(nn.Module):
     def __init__(self, alpha=1.0, beta=0.5):
         super().__init__()
@@ -38,3 +38,4 @@ class L1_Edge_Loss(nn.Module):
 
     def forward(self, pred, target):
         return self.alpha * self.l1(pred, target) + self.beta * self.edge(pred, target)
+
