@@ -50,9 +50,19 @@ class DenoisingDataset(Dataset):
 
     def __getitem__(self, idx):
         real_idx = self.indices[idx]
-
         noisy_path = os.path.join(self.noisy_dir, self.noisy_images[real_idx])
         clean_path = os.path.join(self.clean_dir, self.clean_images[real_idx])
+
+        try:
+            if self.channels == 3:
+                noisy = Image.open(noisy_path).convert("RGB")
+                clean = Image.open(clean_path).convert("RGB")
+            else:
+                noisy = Image.open(noisy_path).convert("L")
+                clean = Image.open(clean_path).convert("L")
+        except Exception as e:
+            print(f"Error loading: {clean_path}")
+            return self.__getitem__((idx + 1) % len(self))
 
         if self.channels == 3:
             noisy = Image.open(noisy_path).convert("RGB")
@@ -79,5 +89,11 @@ class DenoisingDataset(Dataset):
 
         noisy_t = torch.tensor(noisy, dtype=torch.float32)
         clean_t = torch.tensor(clean, dtype=torch.float32)
+        try:
+            noisy = Image.open(noisy_path).convert("L")
+            clean = Image.open(clean_path).convert("L")
+        except Exception as e:
+            print(f"Error loading {clean_path}")
+            return self.__getitem__((idx + 1) % len(self))
 
         return noisy_t, clean_t
