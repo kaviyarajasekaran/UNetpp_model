@@ -6,7 +6,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 class DrawingDataset(Dataset):
-    def __init__(self, noisy_dir, clean_dir, split="train", val_ratio=0.1, img_size=384):
+    def __init__(self, noisy_dir, clean_dir, split="train", val_ratio=0.2, img_size=384):
         self.noisy_dir = noisy_dir
         self.clean_dir = clean_dir
         self.split = split
