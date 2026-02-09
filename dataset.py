@@ -1,24 +1,55 @@
 import os
 from torch.utils.data import Dataset
 from PIL import Image
-import torchvision.transforms as T
+import torch
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
-class DrawingDataset(Dataset):
-    def __init__(self, noisy_dir, clean_dir, img_size=384):
+class DenoisingDataset(Dataset):
+    def __init__(self, noisy_dir, clean_dir, split="train", val_ratio=0.1, image_size=384):
         self.noisy_dir = noisy_dir
         self.clean_dir = clean_dir
-        self.files = sorted(os.listdir(noisy_dir))
 
-        self.tf = T.Compose([
-            T.Resize((img_size, img_size)),
-            T.ToTensor()
-        ])
+        self.files = sorted(os.listdir(noisy_dir))
+        split_idx = int(len(self.files) * (1 - val_ratio))
+
+        if split == "train":
+            self.files = self.files[:split_idx]
+        else:
+            self.files = self.files[split_idx:]
+
+        if split == "train":
+            self.transform = A.Compose([
+                A.Resize(image_size, image_size),
+                A.HorizontalFlip(p=0.5),
+                A.VerticalFlip(p=0.5),
+                A.RandomRotate90(p=0.5),
+                A.GaussNoise(p=0.2),
+                A.Normalize(mean=[0.5], std=[0.5]),
+                ToTensorV2()
+            ])
+        else:
+            self.transform = A.Compose([
+                A.Resize(image_size, image_size),
+                A.Normalize(mean=[0.5], std=[0.5]),
+                ToTensorV2()
+            ])
 
     def __len__(self):
         return len(self.files)
 
     def __getitem__(self, idx):
-        noisy = Image.open(os.path.join(self.noisy_dir, self.files[idx])).convert("L")
-        clean = Image.open(os.path.join(self.clean_dir, self.files[idx])).convert("L")
+        noisy_path = os.path.join(self.noisy_dir, self.files[idx])
+        clean_path = os.path.join(self.clean_dir, self.files[idx])
 
-        return self.tf(noisy), self.tf(clean)
+        noisy = Image.open(noisy_path).convert("L")
+        clean = Image.open(clean_path).convert("L")
+
+        noisy = np.array(noisy)
+        clean = np.array(clean)
+
+        augmented = self.transform(image=noisy, mask=clean)
+        noisy = augmented["image"]
+        clean = augmented["mask"]
+
+        return noisy, clean
