@@ -1,11 +1,9 @@
 import os
 import numpy as np
 from PIL import Image
+import torch
 from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
-
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 
 class DenoisingDataset(Dataset):
     def __init__(
@@ -16,13 +14,14 @@ class DenoisingDataset(Dataset):
         val_ratio=0.2,
         image_size=384,
         invert_target=False,
-        channels=1 
+        channels=1
     ):
         self.noisy_dir = noisy_dir
         self.clean_dir = clean_dir
         self.split = split.lower()
         self.invert_target = invert_target
-        self.channels = channels  # 1 or 3
+        self.channels = channels
+        self.image_size = image_size
 
         noisy_images = sorted(os.listdir(noisy_dir))
         clean_images = sorted(os.listdir(clean_dir))
@@ -40,9 +39,11 @@ class DenoisingDataset(Dataset):
         print(f"Total matched images: {len(self.noisy_images)}")
 
         indices = list(range(len(self.noisy_images)))
-        train_idx, val_idx = train_test_split(indices, test_size=val_ratio, random_state=42, shuffle=True)
-        self.indices = train_idx if self.split == "train" else val_idx
+        train_idx, val_idx = train_test_split(
+            indices, test_size=val_ratio, random_state=42, shuffle=True
+        )
 
+        self.indices = train_idx if self.split == "train" else val_idx
 
     def __len__(self):
         return len(self.indices)
@@ -54,22 +55,29 @@ class DenoisingDataset(Dataset):
         clean_path = os.path.join(self.clean_dir, self.clean_images[real_idx])
 
         if self.channels == 3:
-            noisy = np.array(Image.open(noisy_path).convert("RGB"), dtype=np.float32) / 255.0
-            clean = np.array(Image.open(clean_path).convert("RGB"), dtype=np.float32) / 255.0
-        else:  # channels = 1
-            noisy = np.array(Image.open(noisy_path).convert("L"), dtype=np.float32) / 255.0
-            clean = np.array(Image.open(clean_path).convert("L"), dtype=np.float32) / 255.0
+            noisy = Image.open(noisy_path).convert("RGB")
+            clean = Image.open(clean_path).convert("RGB")
+        else:
+            noisy = Image.open(noisy_path).convert("L")
+            clean = Image.open(clean_path).convert("L")
+
+        noisy = noisy.resize((self.image_size, self.image_size))
+        clean = clean.resize((self.image_size, self.image_size))
+
+        noisy = np.array(noisy, dtype=np.float32) / 255.0
+        clean = np.array(clean, dtype=np.float32) / 255.0
 
         if self.invert_target:
             clean = 1.0 - clean
 
-        out = self.geo_aug(image=noisy, mask=clean)
-        noisy, clean = out["image"], out["mask"]
+        if self.channels == 1:
+            noisy = np.expand_dims(noisy, axis=0)
+            clean = np.expand_dims(clean, axis=0)
+        else:
+            noisy = np.transpose(noisy, (2, 0, 1))
+            clean = np.transpose(clean, (2, 0, 1))
 
-        if self.noisy_aug is not None:
-            noisy = self.noisy_aug(image=noisy)["image"]
-
-        noisy_t = self.to_tensor(image=noisy)["image"].float()
-        clean_t = self.to_tensor(image=clean)["image"].float()
+        noisy_t = torch.tensor(noisy, dtype=torch.float32)
+        clean_t = torch.tensor(clean, dtype=torch.float32)
 
         return noisy_t, clean_t
