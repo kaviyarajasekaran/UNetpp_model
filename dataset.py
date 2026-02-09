@@ -48,52 +48,40 @@ class DenoisingDataset(Dataset):
     def __len__(self):
         return len(self.indices)
 
-    def __getitem__(self, idx):
-        real_idx = self.indices[idx]
-        noisy_path = os.path.join(self.noisy_dir, self.noisy_images[real_idx])
-        clean_path = os.path.join(self.clean_dir, self.clean_images[real_idx])
+   def __getitem__(self, idx):
+    real_idx = self.indices[idx]
 
-        try:
-            if self.channels == 3:
-                noisy = Image.open(noisy_path).convert("RGB")
-                clean = Image.open(clean_path).convert("RGB")
-            else:
-                noisy = Image.open(noisy_path).convert("L")
-                clean = Image.open(clean_path).convert("L")
-        except Exception as e:
-            print(f"Error loading: {clean_path}")
-            return self.__getitem__((idx + 1) % len(self))
+    noisy_path = os.path.join(self.noisy_dir, self.noisy_images[real_idx])
+    clean_path = os.path.join(self.clean_dir, self.clean_images[real_idx])
 
+    try:
         if self.channels == 3:
             noisy = Image.open(noisy_path).convert("RGB")
             clean = Image.open(clean_path).convert("RGB")
         else:
             noisy = Image.open(noisy_path).convert("L")
             clean = Image.open(clean_path).convert("L")
+    except Exception as e:
+        print(f"Error loading: {clean_path}")
+        return self.__getitem__((idx + 1) % len(self))
 
-        noisy = noisy.resize((self.image_size, self.image_size))
-        clean = clean.resize((self.image_size, self.image_size))
+    noisy = noisy.resize((self.image_size, self.image_size))
+    clean = clean.resize((self.image_size, self.image_size))
 
-        noisy = np.array(noisy, dtype=np.float32) / 255.0
-        clean = np.array(clean, dtype=np.float32) / 255.0
+    noisy = np.array(noisy, dtype=np.float32) / 255.0
+    clean = np.array(clean, dtype=np.float32) / 255.0
 
-        if self.invert_target:
-            clean = 1.0 - clean
+    if self.invert_target:
+        clean = 1.0 - clean
 
-        if self.channels == 1:
-            noisy = np.expand_dims(noisy, axis=0)
-            clean = np.expand_dims(clean, axis=0)
-        else:
-            noisy = np.transpose(noisy, (2, 0, 1))
-            clean = np.transpose(clean, (2, 0, 1))
+    if self.channels == 1:
+        noisy = np.expand_dims(noisy, axis=0)
+        clean = np.expand_dims(clean, axis=0)
+    else:
+        noisy = np.transpose(noisy, (2, 0, 1))
+        clean = np.transpose(clean, (2, 0, 1))
 
-        noisy_t = torch.tensor(noisy, dtype=torch.float32)
-        clean_t = torch.tensor(clean, dtype=torch.float32)
-        try:
-            noisy = Image.open(noisy_path).convert("L")
-            clean = Image.open(clean_path).convert("L")
-        except Exception as e:
-            print(f"Error loading {clean_path}")
-            return self.__getitem__((idx + 1) % len(self))
+    noisy_t = torch.tensor(noisy, dtype=torch.float32)
+    clean_t = torch.tensor(clean, dtype=torch.float32)
 
-        return noisy_t, clean_t
+    return noisy_t, clean_t
