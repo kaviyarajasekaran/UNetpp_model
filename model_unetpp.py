@@ -8,7 +8,7 @@ class ConvBlock(nn.Module):
         super().__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_c, out_c, 3, padding=1),
-            nn.BatchNorm2d(out_c),   # ← Use BatchNorm like Colab
+            nn.BatchNorm2d(out_c),  
             nn.ReLU(inplace=True),
             nn.Conv2d(out_c, out_c, 3, padding=1),
             nn.BatchNorm2d(out_c),
@@ -23,7 +23,7 @@ class UNetPP(nn.Module):
     def __init__(self, in_ch=1, out_ch=1):
         super().__init__()
 
-        f = [32, 64, 128, 256]   # ← Match Colab
+        f = [32, 64, 128, 256]  
 
         self.pool = nn.MaxPool2d(2)
 
@@ -46,13 +46,11 @@ class UNetPP(nn.Module):
         self.final = nn.Conv2d(f[0], out_ch, 1)
 
     def forward(self, x):
-        # Encoder
         x0_0 = self.x0_0(x)
         x1_0 = self.x1_0(self.pool(x0_0))
         x2_0 = self.x2_0(self.pool(x1_0))
         x3_0 = self.x3_0(self.pool(x2_0))
 
-        # Decoder
         x0_1 = self.x0_1(torch.cat([x0_0, F.interpolate(x1_0, scale_factor=2, mode="bilinear", align_corners=False)], 1))
         x1_1 = self.x1_1(torch.cat([x1_0, F.interpolate(x2_0, scale_factor=2, mode="bilinear", align_corners=False)], 1))
         x2_1 = self.x2_1(torch.cat([x2_0, F.interpolate(x3_0, scale_factor=2, mode="bilinear", align_corners=False)], 1))
@@ -66,4 +64,5 @@ class UNetPP(nn.Module):
         x0_3 = self.x0_3(torch.cat([x0_0, x0_1, x0_2,
                                     F.interpolate(x1_2, scale_factor=2, mode="bilinear", align_corners=False)], 1))
 
-        return self.final(x0_3)
+        return torch.sigmoid(self.final(x0_3))
+
