@@ -64,5 +64,5 @@ class UNetPP(nn.Module):
         x0_3 = self.x0_3(torch.cat([x0_0, x0_1, x0_2,
                                     F.interpolate(x1_2, scale_factor=2, mode="bilinear", align_corners=False)], 1))
 
-        return torch.sigmoid(self.final(x0_3))
+        return self.final(x0_3)
 
