@@ -5,7 +5,7 @@ class Config:
     channels = 1
     batch_size = 2
     epochs = 30
-    lr = 5e-5
+    lr = 1e-4
     checkpoint_dir = "checkpoints"
     prediction_dir = "predictions"
     val_ratio = 0.2
