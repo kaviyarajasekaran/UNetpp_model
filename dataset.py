@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import random
 from PIL import Image
 import torch
 from torch.utils.data import Dataset
@@ -12,9 +13,10 @@ class DenoisingDataset(Dataset):
         clean_dir,
         split="train",
         val_ratio=0.2,
-        image_size=384,
+        image_size=512,
         invert_target=False,
-        channels=1
+        channels=1,
+        augment=True
     ):
         self.noisy_dir = noisy_dir
         self.clean_dir = clean_dir
@@ -22,6 +24,7 @@ class DenoisingDataset(Dataset):
         self.invert_target = invert_target
         self.channels = channels
         self.image_size = image_size
+        self.augment = augment if split == "train" else False
 
         noisy_images = sorted(os.listdir(noisy_dir))
         clean_images = sorted(os.listdir(clean_dir))
@@ -48,6 +51,22 @@ class DenoisingDataset(Dataset):
     def __len__(self):
         return len(self.indices)
 
+    def apply_augmentation(self, noisy, clean):
+        if random.random() > 0.5:
+            noisy = noisy.transpose(Image.FLIP_LEFT_RIGHT)
+            clean = clean.transpose(Image.FLIP_LEFT_RIGHT)
+
+        if random.random() > 0.5:
+            noisy = noisy.transpose(Image.FLIP_TOP_BOTTOM)
+            clean = clean.transpose(Image.FLIP_TOP_BOTTOM)
+
+        if random.random() > 0.5:
+            angle = random.choice([90, 180, 270])
+            noisy = noisy.rotate(angle)
+            clean = clean.rotate(angle)
+
+        return noisy, clean
+
     def __getitem__(self, idx):
         real_idx = self.indices[idx]
 
@@ -61,12 +80,14 @@ class DenoisingDataset(Dataset):
             else:
                 noisy = Image.open(noisy_path).convert("L")
                 clean = Image.open(clean_path).convert("L")
-        except Exception as e:
-            print(f"Error loading: {clean_path}")
+        except Exception:
             return self.__getitem__((idx + 1) % len(self))
 
         noisy = noisy.resize((self.image_size, self.image_size))
         clean = clean.resize((self.image_size, self.image_size))
+
+        if self.augment:
+            noisy, clean = self.apply_augmentation(noisy, clean)
 
         noisy = np.array(noisy, dtype=np.float32) / 255.0
         clean = np.array(clean, dtype=np.float32) / 255.0
