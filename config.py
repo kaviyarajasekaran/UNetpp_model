@@ -9,5 +9,5 @@ class Config:
     checkpoint_dir = "checkpoints"
     prediction_dir = "predictions"
     val_ratio = 0.2
-    num_workers = 2
+    num_workers = 0
     pin_memory = True
