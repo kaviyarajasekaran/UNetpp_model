@@ -8,10 +8,10 @@ class ConvBlock(nn.Module):
         super().__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_c, out_c, 3, padding=1),
-            nn.BatchNorm2d(out_c),  
+            nn.InstanceNorm2d(out_c, affine=True),  
             nn.ReLU(inplace=True),
             nn.Conv2d(out_c, out_c, 3, padding=1),
-            nn.BatchNorm2d(out_c),
+            nn.InstanceNorm2d(out_c, affine=True),
             nn.ReLU(inplace=True)
         )
 
