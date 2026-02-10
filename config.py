@@ -4,7 +4,7 @@ class Config:
     img_size = 512
     channels = 1
     batch_size = 2
-    epochs = 50
+    epochs = 30
     lr = 1e-4
     checkpoint_dir = "checkpoints"
     prediction_dir = "predictions"
