@@ -84,7 +84,7 @@ class DenoisingDataset(Dataset):
             return self.__getitem__((idx + 1) % len(self))
 
         noisy = noisy.resize((self.image_size, self.image_size), Image.BILINEAR)
-        clean = clean.resize((self.image_size, self.image_size), Image.NEAREST)
+        clean = clean.resize((self.image_size, self.image_size), Image.BILINEAR)
 
         if self.augment:
             noisy, clean = self.apply_augmentation(noisy, clean)
