@@ -13,7 +13,6 @@ class EdgeLoss(nn.Module):
         self.register_buffer("sobel_y", sobel_y)
 
     def forward(self, pred, target):
-        # VERY IMPORTANT LINE
         sobel_x = self.sobel_x.to(device=pred.device, dtype=pred.dtype)
         sobel_y = self.sobel_y.to(device=pred.device, dtype=pred.dtype)
 
