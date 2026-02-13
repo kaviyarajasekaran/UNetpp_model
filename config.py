@@ -1,7 +1,7 @@
 class Config:
     noisy_dir = "/kaggle/input/inputdata-2k/2kdata/Dataset-1k/New_Data100/Noisy"
     clean_dir = "/kaggle/input/inputdata-2k/2kdata/Dataset-1k/New_Data100/Clean"
-    img_size = 384
+    img_size = 512
     channels = 1
     batch_size = 2
     epochs = 30
